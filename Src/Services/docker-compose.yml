@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  employee-service:
+    build:
+      context: ./src/EmployeeService
+      dockerfile: EmployeeService.Api/Dockerfile
+    container_name: employee-service
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_HTTP_PORTS: "8080"
+    networks:
+      - smart-network
+
+  attendance-service:
+    build:
+      context: ./src/AttendanceService
+      dockerfile: AttendanceService.Api/Dockerfile
+    container_name: attendance-service
+    ports:
+      - "8082:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_HTTP_PORTS: "8080"
+    networks:
+      - smart-network
+
+networks:
+  smart-network:
+    driver: bridge
