@@ -1,30 +1,46 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
-
-# This stage is used to build the service project
+# ---------- STAGE: build ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["EmployeeService.Api/EmployeeService.Api.csproj", "EmployeeService.Api/"]
-RUN dotnet restore "./EmployeeService.Api/EmployeeService.Api.csproj"
-COPY . .
-WORKDIR "/src/EmployeeService.Api"
-RUN dotnet build "./EmployeeService.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# copy csproj(s) and restore to leverage cache
+COPY ["EmployeeService.Api/EmployeeService.Api.csproj", "EmployeeService.Api/"]
+# if you have shared libs, copy them too before restore (e.g. Shared/*.csproj)
+# COPY ["Shared/Shared.csproj", "Shared/"]
+RUN dotnet restore "EmployeeService.Api/EmployeeService.Api.csproj"
+
+# Copy full source
+COPY . .
+
+# Build
+WORKDIR /src/EmployeeService.Api
+RUN dotnet build "EmployeeService.Api.csproj" -c ${BUILD_CONFIGURATION} -o /app/build
+
+# ---------- STAGE 2: Publish ----------
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./EmployeeService.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+WORKDIR /src/EmployeeService.Api
+RUN dotnet publish "EmployeeService.Api.csproj" -c ${BUILD_CONFIGURATION} -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
-FROM base AS final
+# ---------- STAGE 3: Final runtime ----------
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# Copy published output
 COPY --from=publish /app/publish .
+
+EXPOSE 8080
+
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl --fail http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "EmployeeService.Api.dll"]
