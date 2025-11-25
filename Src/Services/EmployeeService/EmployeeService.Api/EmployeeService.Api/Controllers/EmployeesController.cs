@@ -18,7 +18,7 @@ namespace EmployeeService.Api.Controllers
         // GET: api/employees
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<EmployeeDto>> Get()
+        public IActionResult Get()
         {
             return Ok(_employees);
         }
