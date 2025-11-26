@@ -26,10 +26,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api.csproj
+        run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj
 
       - name: Run Unit Tests
-        run: dotnet test Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api.csproj --no-build --verbosity normal
+        run: dotnet test Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj --no-build --verbosity normal
 
       - name: Azure Login
         uses: azure/login@v2                      # Login to Azure
