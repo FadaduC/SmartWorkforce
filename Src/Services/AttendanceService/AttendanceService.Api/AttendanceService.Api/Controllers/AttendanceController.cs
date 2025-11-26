@@ -1,17 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AttendanceService.Api.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class AttendanceController : ControllerBase
     {
         private static readonly List<AttendanceRecord> _records = new()
         {
-            new AttendanceRecord(1, 1001, DateTime.Parse("2025-11-01T09:00:00Z"), true),
+            new AttendanceRecord(1, 1001, DateTime.Parse(" 2025-11-01T09:00:00Z"), true),
             new AttendanceRecord(2, 1002, DateTime.Parse("2025-11-01T09:15:00Z"), true),
             new AttendanceRecord(3, 1003, DateTime.Parse("2025-11-01T09:30:00Z"), false)
         };
