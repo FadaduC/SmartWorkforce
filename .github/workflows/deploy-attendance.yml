@@ -7,28 +7,81 @@ on:
       - '.github/workflows/deploy-attendance.yml'
   workflow_dispatch:
 
+env:
+  IMAGE_NAME: attendance-service
+  VERSION_TAG: v1.0.${{ github.run_number }}
+
 jobs:
-  deploy-attendance-service:
+
+  build-and-push:
     runs-on: ubuntu-latest
-    name: Build and Deploy Attendance Service
+    name: Build, Test, and Push Image
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4                  # Pull source code
 
-      - uses: azure/login@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4             # Install .NET SDK
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj
+
+      - name: Run Unit Tests
+        run: dotnet test Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj --no-build --verbosity normal
+
+      - name: Azure Login
+        uses: azure/login@v2                      # Login to Azure
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: azure/container-apps-deploy-action@v1
+      - name: Azure Container Registry Login
+        uses: azure/docker-login@v2               # Login to ACR
         with:
-          dockerfilePath: ./Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile
-          appSourcePath: .
-          containerAppName: attendance-container
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build Image
+        run: |
+          docker build \
+            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ env.VERSION_TAG }} \
+            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }} \
+            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest \
+            -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \
+            .
+
+      - name: Push Image
+        run: |
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ env.VERSION_TAG }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest
+
+    outputs:
+      imageTag: ${{ env.VERSION_TAG }}
+
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    name: Deploy Attendance Service to Production
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps (Production)
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: attendance-container-prod
           resourceGroup: ${{ secrets.RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ secrets.ACA_ENVIRONMENT }}
           registryUrl: ${{ secrets.REGISTRY_LOGIN_SERVER }}
           registryUsername: ${{ secrets.REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.REGISTRY_PASSWORD }}
-          containerAppEnvironment: ${{ secrets.ACA_ENVIRONMENT }}
-          imageToBuild: ${{ secrets.REGISTRY_LOGIN_SERVER }}/attendance-service:${{ github.sha }}
+          imageToDeploy: ${{ secrets.REGISTRY_LOGIN_SERVER }}/attendance-service:${{ needs.build-and-push.outputs.imageTag }}
           ingress: external
           targetPort: 8080
