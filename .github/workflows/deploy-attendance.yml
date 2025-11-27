@@ -29,7 +29,7 @@ jobs:
         run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj
 
       - name: Run Unit Tests
-        run: dotnet test "Src/Services/AttendanceService/AttendanceService.Test/AttendanceService.Test.csproj" --configuration Release --no-build --verbosity normal
+        run: dotnet test "Src/Services/AttendanceService/AttendanceService.Test/AttendanceService.Test.csproj" --configuration Release --verbosity normal
 
 
       - name: Azure Login
@@ -44,14 +44,16 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Build Image
-        run: |
-          docker build \
-            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ env.VERSION_TAG }} \
-            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }} \
-            -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest \
-            -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \            
-            .
+     - name: Build Image
+          run: |
+            docker build \
+              -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ env.VERSION_TAG }} \
+              -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }} \
+              -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest \
+              -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \
+              .
+
+
 
       - name: Push Image
         run: |
