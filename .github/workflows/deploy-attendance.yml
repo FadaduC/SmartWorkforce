@@ -28,7 +28,7 @@ jobs:
         run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj
 
       - name: Run Unit Tests
-        run: dotnet test "Src/Services/AttendanceService/AttendanceService.Test/AttendanceService.Test.csproj" --configuration Release --verbosity normal
+        run: dotnet test "Src/Services/AttendanceService/AttendanceService.Test/AttendanceService.Test.csproj" --configuration Release --logger trx --logger "console;verbosity=minimal"
 
       - name: Azure Login
         uses: azure/login@v2
