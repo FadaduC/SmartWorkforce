@@ -29,7 +29,8 @@ jobs:
         run: dotnet restore Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj
 
       - name: Run Unit Tests
-        run: dotnet test Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/AttendanceService.Api.csproj --no-build --verbosity normal
+        run: dotnet test "Src/Services/AttendanceService/AttendanceService.Test/AttendanceService.Test.csproj" --configuration Release --no-build --verbosity normal
+
 
       - name: Azure Login
         uses: azure/login@v2                      # Login to Azure
@@ -50,6 +51,7 @@ jobs:
             -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }} \
             -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest \
             -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \
+            
             .
 
       - name: Push Image
