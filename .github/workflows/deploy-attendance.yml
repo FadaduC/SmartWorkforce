@@ -50,8 +50,7 @@ jobs:
             -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ env.VERSION_TAG }} \
             -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:${{ github.sha }} \
             -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$IMAGE_NAME:latest \
-            -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \
-            
+            -f Src/Services/AttendanceService/AttendanceService.Api/AttendanceService.Api/Dockerfile \            
             .
 
       - name: Push Image
